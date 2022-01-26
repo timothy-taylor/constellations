@@ -1,11 +1,16 @@
--- constellations
--- scan the galaxy, make music
+-- constellations; version 0.8
+--
+-- scan the stars, make music
 -- an interactive sequencer
--- enc1 == time (division of norns master clock)
--- enc2 == y axis control
--- enc3 == x axis control
--- key2 == clear constellation
--- key3 == lock the targeting computer
+-- for norns, crow, jf, midi
+--
+--
+-- [controls below]
+-- ENC1 == time division
+-- ENC2 == y axis control
+-- ENC3 == x axis control
+-- K2 == clear constellation
+-- K3 == lock the targeting computer
 
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
@@ -34,7 +39,6 @@ function build_midi_device_list()
         table.insert(midi_devices,i..": "..short_name)
     end
 end
-
 function all_notes_off()
     if (params:get("output") == 4 or params:get("output") == 5) then
         for _, a in pairs(active_notes) do
@@ -43,32 +47,12 @@ function all_notes_off()
     end
     active_notes = {}
 end
-
-function stop()
-    play = false
-    all_notes_off()
-end
-
-function start()
-    play = true
-end
-
-function reset()
-    seq_ix = 1
-end
-
-function clock.transport.start()
-    start()
-end
-
-function clock.transport.stop()
-    stop()
-end
-
-function clock.transport.reset()
-    reset()
-end
-
+function stop() play = false; all_notes_off() end
+function start() play = true end
+function reset() seq_ix = 1 end
+function clock.transport.start() start() end
+function clock.transport.stop() stop() end
+function clock.transport.reset() reset() end
 function midi_event(data)
     msg = midi.to_msg(data)
     if msg.type == "start" then
