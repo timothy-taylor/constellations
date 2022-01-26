@@ -10,8 +10,9 @@
 -- ENC2 == y axis control
 -- ENC3 == x axis control
 -- K2 == clear constellation
--- K3 == turn on/off the targeting computer
---       + off by default
+-- K3 == turn on/off 
+--       the targeting computer
+--       [off by default]
 
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
@@ -381,6 +382,6 @@ end
 animate:start()
 
 function cleanup()
-    clock.cancel(main_clock)
     stop()
+    clock.cancel(main_clock)
 end
