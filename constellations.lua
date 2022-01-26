@@ -13,6 +13,9 @@
 -- K3 == turn on/off 
 --       the targeting computer
 --       [off by default]
+-- the current sequence length
+--       is displayed in the 
+--       bottom left corner
 
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
@@ -86,8 +89,6 @@ function midi_event(data)
   end 
 end
 
-
-
 -- main_event is called by the main clock
 function play_seq(t) return scale[t[seq_ix]] end
 function main_event()
@@ -148,12 +149,16 @@ function star_methods.iterate(s)
   end
 end
 
+-- set tagged to true (for the draw function)
+-- add the star's note to the sequencer table
 function star_methods.tag(star,i)
   local x = crosshair.x
   local y = crosshair.y
+  local size_cross = crosshair.size
+  local size_star = star.size
   if not star.tagged and not locked then
-    if (star.x - star.size - crosshair.size <= x) and (x <= star.x + star.size + crosshair.size)
-    and (star.y - star.size - crosshair.size <= y) and (y <= star.y + star.size + crosshair.size)
+    if (star.x - size_star - size_cross <= x) and (x <= star.x + size_star + size_cross)
+    and (star.y - size_star - size_cross <= y) and (y <= star.y + size_star + size_cross)
     then
       local id = #note_seq + 1;
       star.tagged = true
@@ -168,7 +173,7 @@ function star_methods.tag(star,i)
 end
 
 function star_methods.delete(star,i)
-  if 2 - star.x - star.size > v.w then
+  if star.x - star.size > v.w then
     table.remove(stars,i)
     if #note_seq < 1 and play then
       play = false;
