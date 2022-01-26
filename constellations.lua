@@ -10,7 +10,8 @@
 -- ENC2 == y axis control
 -- ENC3 == x axis control
 -- K2 == clear constellation
--- K3 == lock the targeting computer
+-- K3 == turn on/off the targeting computer
+--       + off by default
 
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
@@ -21,9 +22,9 @@ local stars = {}
 -- script helpers, booleans, and logic
 local v = { w = 128, h = 64 }
 local crosshair = { size = 3, x = v.w / 2, y = v.h / 2 }
+local locked = true 
 local play = false
 local clear = false
-local locked = false
 
 -- output & midi
 options = {}
