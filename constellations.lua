@@ -280,6 +280,7 @@ function init()
   end   
   
   math.randomseed(Util.time())
+  norns.enc.sens(1,8)
   norns.enc.sens(2,2)
   norns.enc.sens(3,1)
   
