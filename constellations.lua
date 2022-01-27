@@ -9,7 +9,7 @@
 -- ENC1 == time division
 -- ENC2 == y axis control
 -- ENC3 == x axis control
--- K2 == clear constellation
+-- K2 == CLEAR constellation
 -- K3 == turn on/off 
 --       the targeting computer
 --       [off by default]
@@ -20,36 +20,18 @@
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
 local Util = require 'util'
-local Star = include 'lib/star'
-local stars = {}
+local StarFactory = include 'lib/starfactory'
+local seq = include 'lib/sequencer'
+local stars = include 'lib/stars'
+local crosshair = { size = 3, x = 128 / 2, y = 64 / 2 }
 
--- script helpers, booleans, and logic
-local v = { w = 128, h = 64 }
-local crosshair = { size = 3, x = v.w / 2, y = v.h / 2 }
-local locked = true 
-local play = false
-local clear = false
-
--- scale & sequencer
-local scale_names = {}
-local scale = {}
-local active_notes = {}
-local note_seq = {}
-local seq_ix = 1
-function build_scale()
-  scale = Mu.generate_scale_of_length(params:get("root_note"), params:get("scale_mode"), 32)
-  local num_to_add = 32 - #scale
-  for i = 1, num_to_add do
-    table.insert(scale, scale[32 - num_to_add])
-  end
-end
-
--- output & midi
+-- output & midi thanks to awake :)
 local options = {}
 options.OUTPUT = {"audio", "crow out 1+2", "crow ii JF", "midi", "audio + midi"}
 local midi_devices
 local midi_device
 local midi_channel
+
 function build_midi_device_list()
   midi_devices = {}
   for i = 1,#midi.vports do
@@ -58,27 +40,30 @@ function build_midi_device_list()
     table.insert(midi_devices,i..": "..short_name)
   end
 end
+
 function all_notes_off()
   if (params:get("output") == 4 or params:get("output") == 5) then
-    for _, a in pairs(active_notes) do
+    for _, a in pairs(seq.active_notes) do
       midi_device:note_off(a, nil, midi_channel)
     end
   end
-  active_notes = {}
+  seq.active_notes = {}
 end
-function start() play = true end
-function reset() seq_ix = 1 end
-function stop() play = false; all_notes_off() end
+
+function start() seq.start() end
+function reset() seq.reset() end
+function stop() seq.stop(); all_notes_off() end
 function clock.transport.start() start() end
 function clock.transport.stop() stop() end
 function clock.transport.reset() reset() end
+
 function midi_event(data)
   msg = midi.to_msg(data)
   if msg.type == "start" then
     clock.transport.reset()
     clock.transport.start()
   elseif msg.type == "continue" then
-    if play then 
+    if seq.PLAY then 
       clock.transport.stop()
     else 
       clock.transport.start()
@@ -90,16 +75,17 @@ function midi_event(data)
 end
 
 -- main_event is called by the main clock
-function play_seq(t) return scale[t[seq_ix]] end
 function main_event()
   while true do
+     if seq.get_size() < 1 and seq.PLAY then
+      stop()
+    end
     clock.sync(1/params:get("step_div"))
-    if play then
+    if seq.PLAY then
       all_notes_off()
-      local x = #note_seq
-      if x > 0 then 
-        seq_ix = (seq_ix % x) + 1
-        local note = play_seq(note_seq)
+      if seq.get_size() > 0 then 
+        seq.increment()
+        local note = seq.get_note()
         if note then
           if math.random(100) <= params:get("probability") then
             if params:get("output") == 1 or params:get("output") == 5 then
@@ -113,124 +99,60 @@ function main_event()
             -- MIDI out
             if (params:get("output") == 4 or params:get("output") == 5) then
               midi_device:note_on(note, 96, midi_channel)
-              table.insert(active_notes, note)
+              table.insert(seq.active_notes, note)
             end
             --local note_off_time = 
             -- Note off timeout
             if params:get("note_length") < 4 then
               notes_off_metro:start(
                 (60 / params:get("clock_tempo") 
-                  / params:get("step_div")) 
-                * params:get("note_length") 
-                * 0.25,
-                1)
+                    / params:get("step_div")) 
+                    * params:get("note_length") 
+                    * 0.25, 1)
             end
           end
         end
       else
-        play = false
+        stop()
       end
     end
   end
 end
 
---
---
--- star parameter manipulations take place here
-star_methods = {}
-function star_methods.iterate(s)
-  for i=1,#s do
-    if s[i] then
-      star_methods.update_coordinate(s[i])
-      star_methods.tag(s[i],i)
-      star_methods.delete(s[i],i)
-      star_methods.update_brightness(s[i]) 
-    end
-  end
-end
-
--- set tagged to true (for the draw function)
--- add the star's note to the sequencer table
-function star_methods.tag(star,i)
-  local x = crosshair.x
-  local y = crosshair.y
-  local size_cross = crosshair.size
-  local size_star = star.size
-  if not star.tagged and not locked then
-    if (star.x - size_star - size_cross <= x) and (x <= star.x + size_star + size_cross)
-    and (star.y - size_star - size_cross <= y) and (y <= star.y + size_star + size_cross)
-    then
-      local id = #note_seq + 1;
-      star.tagged = true
-      star.id = id
-      note_seq[id] = star.note
-      if not play then start() end
-      if clear then clear = false end
-    else
-      if clear then star.tagged = false end
-    end
-  end
-end
-
-function star_methods.delete(star,i)
-  if star.x - star.size > v.w then
-    table.remove(stars,i)
-    if #note_seq < 1 and play then
-      play = false;
-    end
-    star = nil
-  end
-end
-
-function star_methods.update_coordinate(star)
-  star.x = star.x + 1 
-end
-
-do
-  local i = 0;
-    function star_methods.update_brightness(star)
-      i = i + 1
-      if i % 8 == 0 then
-        i = 0
-        local walk = math.random() >= 0.5 and 2 or -2
-        star.brightness = Util.clamp(star.brightness + walk, 1,15)    
-      end
-    end
-end
---
---
 
 function redraw()
   screen.clear()
-  
-  if #stars > 0 then
+
+  local n = stars.get_number()
+  if n > 0 then
     local lastX
     local lastY
-    for i=1,#stars do
-      if stars[i] then
+    for i=1,n do
+      local s = stars.data[i]
+      if s then
         -- draw the star
-        screen.level(stars[i].brightness)
-        screen.circle(stars[i].x, stars[i].y, stars[i].size)
+        screen.level(s.brightness)
+        screen.circle(s.x, s.y, s.size)
         screen.fill()
-        if stars[i].tagged and not clear then
-          -- draw the tagged box
+        if s.TAGGED and not seq.CLEAR then
+          -- draw the TAGGED box
           screen.level(2)
           screen.rect(
-            stars[i].x - stars[i].size - 1, 
-            stars[i].y - stars[i].size - 1, 
-            2 + stars[i].size * 2, 
-            2 + stars[i].size * 2
+            s.x - s.size - 1, 
+            s.y - s.size - 1, 
+            2 + s.size * 2, 
+            2 + s.size * 2
             )
             screen.stroke()
             
             if lastX and lastY then
               screen.level(2)
-              screen.move(stars[i].x,stars[i].y)
+              screen.move(s.x,s.y)
               screen.line(lastX,lastY)
               screen.stroke()
             end
-            lastX = stars[i].x
-            lastY = stars[i].y
+            lastX = s.x
+            lastY = s.y
         end
       end
     end
@@ -241,14 +163,14 @@ function redraw()
     screen.pixel(crosshair.x, crosshair.y)
     screen.pixel(crosshair.x + n, crosshair.y)
     screen.pixel(crosshair.x - n, crosshair.y)
-    if not locked then screen.pixel(crosshair.x, crosshair.y + n) end
-    if not locked then screen.pixel(crosshair.x, crosshair.y - n) end
+    if not seq.LOCKED then screen.pixel(crosshair.x, crosshair.y + n) end
+    if not seq.LOCKED then screen.pixel(crosshair.x, crosshair.y - n) end
   end
   screen.fill()
   -- write the size of sequence
   screen.level(7)
-  screen.move(0,v.h)
-  screen.text(""..#note_seq)
+  screen.move(0,64)
+  screen.text(""..seq.get_size())
   screen.fill() 
   
   screen.update()
@@ -258,11 +180,9 @@ end
 function key(n,z)
   if z == 1 then
     if n == 2 then
-      note_seq = {}
-      seq_ix = 1
-      clear = true
+      seq.clear_notes()
     elseif n == 3 then
-      locked = not locked
+      seq.toggle_lock()
     end
   end
 end
@@ -271,14 +191,13 @@ function enc(n,d)
   if n == 1 then
     params:delta("step_div",d)
   elseif n == 2 then
-    crosshair.y = Util.clamp(crosshair.y + d, 0, v.h - 1)
+    crosshair.y = Util.clamp(crosshair.y + d, 0, 64 - 1)
   elseif n == 3 then
-    crosshair.x = Util.clamp(crosshair.x + d, 0, v.w - 1)
+    crosshair.x = Util.clamp(crosshair.x + d, 0, 128 - 1)
   end
 end
 
-setup = {}
-function setup.params()
+local function setup_params()
   params:add_separator("Constellations")
   
   params:add_group("output",3)
@@ -315,11 +234,11 @@ function setup.params()
     default = 4}
   
   params:add{type = "option", id = "scale_mode", name = "scale mode",
-    options = scale_names, default = 5,
-    action = function() build_scale() end}
+    options = seq.scale_names, default = 5,
+    action = function() seq.build_scale() end}
   params:add{type = "number", id = "root_note", name = "root note",
     min = 0, max = 127, default = 60, formatter = function(param) return Mu.note_num_to_name(param:get(), true) end,
-    action = function() build_scale() end}
+    action = function() seq.build_scale() end}
   params:add{type = "number", id = "probability", name = "probability",
     min = 0, max = 100, default = 100}
   params:add{type = "trigger", id = "stop", name = "stop",
@@ -357,7 +276,7 @@ end
 
 function init()
   for i = 1, #Mu.SCALES do
-    table.insert(scale_names, string.lower(Mu.SCALES[i].name))
+    table.insert(seq.scale_names, string.lower(Mu.SCALES[i].name))
   end   
   
   math.randomseed(Util.time())
@@ -365,8 +284,8 @@ function init()
   norns.enc.sens(3,1)
   
   build_midi_device_list()
-  setup.params()
-  build_scale()
+  setup_params()
+  seq.build_scale()
   midi_device = midi.connect(value)
   midi_device.event = midi_event
   main_clock = clock.run(main_event)
@@ -379,18 +298,18 @@ animate.time = 1/15
 animate.event = function()
   -- create a star with 25% probability
   if math.random() <= 0.25 then
-    local star = Star:new()
+    local star = StarFactory:new()
     local size = math.floor(math.log(math.random(15)))
     local qt = math.floor(size/4)
-    local y = math.random(qt, v.h - qt)
-    star.note = math.floor(Util.linlin(qt,v.h-qt,0,32,v.h-y))
+    local y = math.random(qt, 64 - qt)
+    star.note = math.floor(Util.linlin(qt,64-qt,0,32,64-y))
     star.brightness = math.floor(math.random(1,15))
     star.size = size
     star.y = y
-    table.insert(stars,star)
+    stars.add(star)
   end
-  -- apply changes
-  star_methods.iterate(stars)
+  -- update stars
+  stars.iterate(seq,crosshair)
   -- and then draw them
   redraw()
 end

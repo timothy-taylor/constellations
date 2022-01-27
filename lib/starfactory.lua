@@ -1,14 +1,14 @@
-Star = { 
+StarFactory = { 
   note = 0, 
   brightness = 1,
   size = 1,
   x = 1, 
   y = 1, 
-  tagged = false,
+  TAGGED = false,
   id = nil
 }
 
-function Star:new (
+function StarFactory:new (
     o,
     note,
     brightness,
@@ -27,9 +27,9 @@ function Star:new (
   self.size = size or 1
   self.x = x or 1
   self.y = y or 1
-  self.tagged = tagged or false
+  self.TAGGED = TAGGED or false
   self.id = id or nil
   return o
 end
 
-return Star
+return StarFactory
