@@ -28,6 +28,8 @@ stars.tag = function(star,i,seq,crosshair)
       star.TAGGED = true
       star.id = id
       seq.add_note(star.note,id)
+      seq.add_release(star.size,id)
+      seq.add_amp(star.brightness,id)
       if not seq.PLAY then start() end
       if seq.CLEAR then seq.CLEAR = false end
     else

@@ -1,4 +1,4 @@
--- constellations; version 0.8
+-- constellations; version 0.8.2
 --
 -- scan the stars, make music
 -- an interactive sequencer
@@ -9,13 +9,26 @@
 -- ENC1 == time division
 -- ENC2 == y axis control
 -- ENC3 == x axis control
--- K2 == CLEAR constellation
--- K3 == turn on/off 
+-- ALT + ENC1 == probability
+-- ALT + ENC2 == density
+-- ALT + ENC3 == size
+-- KEY1 == ALT
+-- KEY2 == clear constellation
+-- KEY3 == turn on/off 
 --       the targeting computer
 --       [off by default]
 -- the current sequence length
 --       is displayed in the 
 --       bottom left corner
+-- the current clock division
+--       is displayed in the
+--       top right corner
+--
+-- crow 
+-- [ output1: 1 volt per octave ]
+-- [ output2: clock pulse ]
+-- [ output3: unipolar CV ]
+-- [ output4: bipolar CV ]
 
 engine.name = "PolyPerc"
 local Mu = require 'musicutil'
@@ -24,14 +37,14 @@ local StarFactory = include 'lib/starfactory'
 local seq = include 'lib/sequencer'
 local stars = include 'lib/stars'
 local crosshair = { size = 3, x = 128 / 2, y = 64 / 2 }
+local ALT = false
 
--- output & midi thanks to awake :)
+-- output & midi; thanks to tehn & awake :)
 local options = {}
 options.OUTPUT = {"audio", "crow out 1+2", "crow ii JF", "midi", "audio + midi"}
 local midi_devices
 local midi_device
 local midi_channel
-
 function build_midi_device_list()
   midi_devices = {}
   for i = 1,#midi.vports do
@@ -40,7 +53,6 @@ function build_midi_device_list()
     table.insert(midi_devices,i..": "..short_name)
   end
 end
-
 function all_notes_off()
   if (params:get("output") == 4 or params:get("output") == 5) then
     for _, a in pairs(seq.active_notes) do
@@ -49,14 +61,12 @@ function all_notes_off()
   end
   seq.active_notes = {}
 end
-
 function start() seq.start() end
 function reset() seq.reset() end
 function stop() seq.stop(); all_notes_off() end
 function clock.transport.start() start() end
 function clock.transport.stop() stop() end
 function clock.transport.reset() reset() end
-
 function midi_event(data)
   msg = midi.to_msg(data)
   if msg.type == "start" then
@@ -89,10 +99,14 @@ function main_event()
         if note then
           if math.random(100) <= params:get("probability") then
             if params:get("output") == 1 or params:get("output") == 5 then
+              engine.release(seq.get_release())
+              engine.amp(seq.get_amp())
               engine.hz(Mu.note_num_to_freq(note))
             elseif params:get("output") == 2 then
               crow.output[1].volts = (note-60)/12
               crow.output[2].execute()
+              crow.output[3].volts = seq.get_amp_crow()
+              crow.output[4].volts = seq.get_release_crow()
             elseif params:get("output") == 3 then
               crow.ii.jf.play_note((note-60)/12,5)
             end
@@ -122,7 +136,6 @@ end
 
 function redraw()
   screen.clear()
-
   local n = stars.get_number()
   if n > 0 then
     local lastX
@@ -172,6 +185,39 @@ function redraw()
   screen.move(0,64)
   screen.text(""..seq.get_size())
   screen.fill() 
+  -- write current clock division
+  screen.level(7)
+  screen.move(124, 5)
+  screen.text(""..params:get("step_div"))
+  screen.fill()
+  -- ALT
+  if ALT then
+    screen.level(2)
+    screen.rect(32,0,96,68)
+    screen.fill()
+    screen.level(0)
+    screen.font_face(3)
+    screen.font_size(15)
+    screen.move(36,2 + 32)
+    screen.text("constellations")
+    screen.level(15)
+    screen.font_face(1)
+    screen.font_size(8)
+    screen.move(44,62)
+    screen.text("density")
+    screen.move(64,53)
+    screen.text(params:get("density"))
+    screen.move(103,62)
+    screen.text("size")
+    screen.move(103,53)
+    screen.text(params:get("size"))
+    screen.move(74, 6)
+    screen.text("probability")
+    screen.move(74, 15)
+    screen.text(params:get("probability"))
+    screen.stroke()
+  end
+  
   
   screen.update()
 end
@@ -179,33 +225,46 @@ end
 
 function key(n,z)
   if z == 1 then
-    if n == 2 then
-      seq.clear_notes()
+    if n == 1 then
+      ALT = true
+    elseif n == 2 then
+      seq.clear_all()
     elseif n == 3 then
       seq.toggle_lock()
     end
+  else
+    ALT = false
   end
 end
 
 function enc(n,d)
-  if n == 1 then
+  if n == 1 and ALT then
+    params:delta("probability",d)
+  elseif n == 1 then
     params:delta("step_div",d)
+  elseif n == 2 and ALT then
+    params:delta("density",d)
   elseif n == 2 then
     crosshair.y = Util.clamp(crosshair.y + d, 0, 64 - 1)
+  elseif n == 3 and ALT then
+    params:delta("size",d)
   elseif n == 3 then
     crosshair.x = Util.clamp(crosshair.x + d, 0, 128 - 1)
   end
 end
 
 local function setup_params()
-  params:add_separator("Constellations")
+  params:add_separator("constellations")
   
   params:add_group("output",3)
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
     action = function(value)
       all_notes_off()
-      if value == 2 then crow.output[2].action = "pulse()"
+      if value == 2 then 
+        crow.output[2].action = "pulse()"
+        crow.output[3].shape = "sine"
+        crow.output[4].shape = "sine"
       elseif value == 3 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
@@ -249,17 +308,17 @@ local function setup_params()
     action = function() reset() end}
   
   params:add_group("engine params",6)
-  cs_AMP = controlspec.new(0,1,'lin',0,0.3,'')
-  params:add{type="control",id="amp",controlspec=cs_AMP,
+  cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
+  params:add{type="control",id="amp",name="maximum amplitude",controlspec=cs_AMP,
     action=function(x) engine.amp(x) end}
   
-  cs_PW = controlspec.new(0,100,'lin',0,50,'%')
-  params:add{type="control",id="pw",controlspec=cs_PW,
-    action=function(x) engine.pw(x/100) end}
-  
   cs_REL = controlspec.new(0.1,3.2,'lin',0,1.2,'s')
-  params:add{type="control",id="release",controlspec=cs_REL,
+  params:add{type="control",id="release", name="maximum release",controlspec=cs_REL,
     action=function(x) engine.release(x) end}
+  
+  cs_PW = controlspec.new(0,100,'lin',0,50,'%')
+  params:add{type="control",id="pulsewidth",controlspec=cs_PW,
+    action=function(x) engine.pw(x/100) end}
   
   cs_CUT = controlspec.new(50,5000,'exp',0,800,'hz')
   params:add{type="control",id="cutoff",controlspec=cs_CUT,
@@ -272,6 +331,11 @@ local function setup_params()
   cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
+  
+  params:add{type = "number", id = "density", name = "star density",
+    min = 1, max = 100, default = 25} 
+  params:add{type = "number", id = "size", name = "star size",
+    min = 1, max = 100, default = 1} 
 end
 
 function init()
@@ -280,7 +344,6 @@ function init()
   end   
   
   math.randomseed(Util.time())
-  norns.enc.sens(1,8)
   norns.enc.sens(2,2)
   norns.enc.sens(3,1)
   
@@ -297,10 +360,10 @@ notes_off_metro.event = all_notes_off
 animate = metro.init()
 animate.time = 1/15
 animate.event = function()
-  -- create a star with 25% probability
-  if math.random() <= 0.25 then
+  -- create a star according to density param
+  if math.random(100) <= params:get("density") then
     local star = StarFactory:new()
-    local size = math.floor(math.log(math.random(15)))
+    local size = math.floor(math.log(math.random(params:get("size") * 15)))
     local qt = math.floor(size/4)
     local y = math.random(qt, 64 - qt)
     star.note = math.floor(Util.linlin(qt,64-qt,0,32,64-y))
@@ -309,7 +372,7 @@ animate.event = function()
     star.y = y
     stars.add(star)
   end
-  -- update stars
+  -- apply changes
   stars.iterate(seq,crosshair)
   -- and then draw them
   redraw()
