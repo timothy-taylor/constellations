@@ -188,7 +188,7 @@ function redraw()
   -- write current clock division
   screen.level(7)
   screen.move(124, 5)
-  screen.text(""..params:get("step_div"))
+  screen.text_right(""..params:get("step_div"))
   screen.fill()
   -- ALT
   if ALT then
