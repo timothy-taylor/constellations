@@ -24,7 +24,7 @@ seq.stop = function() seq.PLAY = false end
 seq.reset = function() seq.ix = 1 end
 seq.get_note = function() return seq.scale[seq.notes[seq.ix]] end
 seq.get_release = function() return Util.linlin(1,7,0.1,params:get("release"),seq.release[seq.ix]) end
-seq.get_release_crow = function() return Util.linliin(1,7,-5,5,seq.release[seq.ix]) end
+seq.get_release_crow = function() return Util.linlin(1,7,-5,5,seq.release[seq.ix]) end
 seq.get_amp = function() return Util.linlin(1,15,0,params:get("amp"),seq.amp[seq.ix]) end
 seq.get_amp_crow = function() Util.linlin(1,15,0,5,seq.amp[seq.ix]) end
 seq.get_size = function () return #seq.notes end
