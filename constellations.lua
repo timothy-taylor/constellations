@@ -34,86 +34,66 @@ engine.name = "PolyPerc"
 local Mu = require 'musicutil'
 local Util = require 'util'
 local StarFactory = include 'lib/starfactory'
+local midi_util = include 'lib/midi_util'
 local seq = include 'lib/sequencer'
 local stars = include 'lib/stars'
-local crosshair = { size = 3, x = 128 / 2, y = 64 / 2 }
+local crosshair = include 'lib/crosshair'
 local ALT = false
 
--- output & midi; thanks to tehn & awake :)
+-- output options; thanks to tehn & awake :)
 local options = {}
-options.OUTPUT = {"audio", "crow out 1+2", "crow ii JF", "midi", "audio + midi"}
-local midi_devices
-local midi_device
-local midi_channel
-function build_midi_device_list()
-  midi_devices = {}
-  for i = 1,#midi.vports do
-    local long_name = midi.vports[i].name
-    local short_name = string.len(long_name) > 15 and util.acronym(long_name) or long_name
-    table.insert(midi_devices,i..": "..short_name)
-  end
-end
-function all_notes_off()
-  if (params:get("output") == 4 or params:get("output") == 5) then
-    for _, a in pairs(seq.active_notes) do
-      midi_device:note_off(a, nil, midi_channel)
-    end
-  end
-  seq.active_notes = {}
-end
-function start() seq.start() end
+options.OUTPUT = {
+  "audio", 
+  "audio + midi", 
+  "midi", 
+  "crow out", 
+  "crow out + ii JF", 
+  "crow ii JF"
+}
+
+function start() midi_util.start() end
 function reset() seq.reset() end
-function stop() seq.stop(); all_notes_off() end
+function stop() midi_util.stop(); midi_util.all_notes_off() end
 function clock.transport.start() start() end
 function clock.transport.stop() stop() end
 function clock.transport.reset() reset() end
-function midi_event(data)
-  msg = midi.to_msg(data)
-  if msg.type == "start" then
-    clock.transport.reset()
-    clock.transport.start()
-  elseif msg.type == "continue" then
-    if seq.PLAY then 
-      clock.transport.stop()
-    else 
-      clock.transport.start()
-    end
-  end 
-  if msg.type == "stop" then
-    clock.transport.stop()
-  end 
-end
 
 -- main_event is called by the main clock
 function main_event()
   while true do
-     if seq.get_size() < 1 and seq.PLAY then
+     if seq.get_size() < 1 and midi_util.PLAY then
       stop()
     end
     clock.sync(1/params:get("step_div"))
-    if seq.PLAY then
-      all_notes_off()
+    if midi_util.PLAY then
+      midi_util.all_notes_off()
       if seq.get_size() > 0 then 
         seq.increment()
         local note = seq.get_note()
         if note then
           if math.random(100) <= params:get("probability") then
-            if params:get("output") == 1 or params:get("output") == 5 then
+            if params:get("output") == 1 or params:get("output") == 2 then
               engine.release(seq.get_release())
               engine.amp(seq.get_amp())
               engine.hz(Mu.note_num_to_freq(note))
-            elseif params:get("output") == 2 then
-              crow.output[1].volts = (note-60)/12
-              crow.output[2].execute()
-              crow.output[3].volts = seq.get_amp_crow()
-              crow.output[4].volts = seq.get_release_crow()
-            elseif params:get("output") == 3 then
-              crow.ii.jf.play_note((note-60)/12,5)
+            end
+            if crow.connected() then
+              -- crow out
+              if params:get("output") == 4 or params:get("output") == 5 then
+                crow.output[1].volts = (note-60)/12
+                crow.output[2].execute()
+                crow.output[3].volts = seq.get_amp_crow()
+                crow.output[4].volts = seq.get_release_crow()
+              end
+              -- JF out
+              if params:get("output") == 5 or params:get("output") == 6 then
+                crow.ii.jf.play_note((note-60)/12,5)
+              end
             end
             -- MIDI out
-            if (params:get("output") == 4 or params:get("output") == 5) then
-              midi_device:note_on(note, 96, midi_channel)
-              table.insert(seq.active_notes, note)
+            if (params:get("output") == 2 or params:get("output") == 3) then
+              midi_util.device:note_on(note, 96, midi_util.channel)
+              table.insert(midi_util.active_notes, note)
             end
             --local note_off_time = 
             -- Note off timeout
@@ -132,7 +112,6 @@ function main_event()
     end
   end
 end
-
 
 function redraw()
   screen.clear()
@@ -218,7 +197,6 @@ function redraw()
     screen.stroke()
   end
   
-  
   screen.update()
 end
 
@@ -227,8 +205,12 @@ function key(n,z)
   if z == 1 then
     if n == 1 then
       ALT = true
+    elseif n == 2 and ALT then
+      seq.shift()
     elseif n == 2 then
       seq.clear_all()
+    elseif n == 3 and ALT then
+      seq.pop()
     elseif n == 3 then
       seq.toggle_lock()
     end
@@ -255,12 +237,13 @@ end
 
 local function setup_params()
   params:add_separator("constellations")
-  
+
+  -- output params 
   params:add_group("output",3)
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
     action = function(value)
-      all_notes_off()
+      midi_util.all_notes_off()
       if value == 2 then 
         crow.output[2].action = "pulse()"
         crow.output[3].shape = "sine"
@@ -271,27 +254,30 @@ local function setup_params()
       end
     end
   }
-    
+
+  -- midi params  
   params:add{type = "option", id = "midi_device", name = "midi out device",
-    options = midi_devices, default = 1,
-    action = function(value) midi_device = midi.connect(value) end
+    options = midi_util.devices, default = 1,
+    action = function(value) midi_util.device = midi.connect(value) end
   }
-    
   params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
     min = 1, max = 16, default = 1,
     action = function(value)
-      all_notes_off()
-      midi_channel = value
+      midi_util.all_notes_off()
+      midi_util.channel = value
     end
   }
-      
-  params:add_group("sequencer params",8)
-  params:add{type = "number", id = "step_div", name = "step division", min = 1, max = 16, default = 4}
   
+  -- sequencer params
+  params:add_group("sequencer params",10)
+  params:add{type = "number", id = "max_size", name = "max sequence size", 
+    min = 1, max = 2000, default = 128 }
+  params:add{type = "option", id = "overwrite_logic", name = "overwrite logic", options = { "low to high", "random", "none" }, default = 1 }
+  params:add{type = "number", id = "step_div", name = "step division", 
+    min = 1, max = 16, default = 4}
   params:add{type = "option", id = "note_length", name = "note length",
     options = {"25%", "50%", "75%", "100%"},
     default = 4}
-  
   params:add{type = "option", id = "scale_mode", name = "scale mode",
     options = seq.scale_names, default = 5,
     action = function() seq.build_scale() end}
@@ -306,14 +292,15 @@ local function setup_params()
     action = function() start() end}
   params:add{type = "trigger", id = "reset", name = "reset",
     action = function() reset() end}
-  
+ 
+  -- engine params
   params:add_group("engine params",6)
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
-  params:add{type="control",id="amp",name="maximum amplitude",controlspec=cs_AMP,
+  params:add{type="control",id="amp",name="max amplitude",controlspec=cs_AMP,
     action=function(x) engine.amp(x) end}
   
   cs_REL = controlspec.new(0.1,3.2,'lin',0,1.2,'s')
-  params:add{type="control",id="release", name="maximum release",controlspec=cs_REL,
+  params:add{type="control",id="release", name="max release",controlspec=cs_REL,
     action=function(x) engine.release(x) end}
   
   cs_PW = controlspec.new(0,100,'lin',0,50,'%')
@@ -331,32 +318,31 @@ local function setup_params()
   cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
   params:add{type="control",id="pan",controlspec=cs_PAN,
     action=function(x) engine.pan(x) end}
-  
+ 
+  -- star params
   params:add{type = "number", id = "density", name = "star density",
     min = 1, max = 100, default = 25} 
   params:add{type = "number", id = "size", name = "star size",
-    min = 1, max = 100, default = 1} 
-end
+    min = 1, max = 100, default = 1}
+ end
 
 function init()
-  for i = 1, #Mu.SCALES do
-    table.insert(seq.scale_names, string.lower(Mu.SCALES[i].name))
-  end   
+  seq.build_scale_list()
   
   math.randomseed(Util.time())
   norns.enc.sens(2,2)
-  norns.enc.sens(3,1)
+  norns.enc.sens(3,2)
   
-  build_midi_device_list()
+  midi_util.build_midi_device_list()
   setup_params()
   seq.build_scale()
-  midi_device = midi.connect(value)
-  midi_device.event = midi_event
+  midi_util.device = midi.connect(value)
+  midi_util.attach_event()
   main_clock = clock.run(main_event)
 end
 
 notes_off_metro = metro.init()
-notes_off_metro.event = all_notes_off
+notes_off_metro.event = midi_util.all_notes_off
 animate = metro.init()
 animate.time = 1/15
 animate.event = function()
@@ -378,6 +364,10 @@ animate.event = function()
   redraw()
 end
 animate:start()
+
+function rerun()
+  norns.script.load(norns.state.script)
+end
 
 function cleanup()
   stop()

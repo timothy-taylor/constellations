@@ -21,15 +21,22 @@ stars.tag = function(star,i,seq,crosshair)
   local size_cross = crosshair.size
   local size_star = star.size
   if not star.TAGGED and not seq.LOCKED then
-    if (star.x - size_star - size_cross <= x) and (x <= star.x + size_star + size_cross)
-    and (star.y - size_star - size_cross <= y) and (y <= star.y + size_star + size_cross)
+    if (star.x - size_star - size_cross <= x) 
+    and (x <= star.x + size_star + size_cross)
+    and (star.y - size_star - size_cross <= y) 
+    and (y <= star.y + size_star + size_cross)
     then
       local id = seq.get_size() + 1;
       star.TAGGED = true
       star.id = id
-      seq.add_note(star.note,id)
-      seq.add_release(star.size,id)
-      seq.add_amp(star.brightness,id)
+      
+      if params:get("overwrite_logic") ~= 3 then
+        seq.set_overwrite_ix(y)
+        seq.add_note(star.note,id)
+        seq.add_release(star.size,id)
+        seq.add_amp(star.brightness,id)
+      end
+
       if not seq.PLAY then start() end
       if seq.CLEAR then seq.CLEAR = false end
     else
