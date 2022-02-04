@@ -1,4 +1,4 @@
--- constellations; version 0.8.3
+-- constellations; version 0.8.4
 --
 -- scan the stars, make music
 -- an interactive sequencer
@@ -17,14 +17,20 @@
 -- KEY3 == turn on/off 
 --       the targeting computer
 --       [off by default]
--- the current sequence length
---       is displayed in the 
---       bottom left corner
+-- ALT + KEY2 == sequence shift
+-- ALT + KEY3 == sequence pop
+--
 -- the current clock division
 --       is displayed in the
 --       top right corner
+-- the current sequence length
+--       is displayed in the 
+--       bottom left corner
+-- max sequence length can
+--       be set in params
 --
 -- crow 
+-- [  input2: 0-5v => Y axis ]
 -- [ output1: 1 volt per octave ]
 -- [ output2: clock pulse ]
 -- [ output3: unipolar CV ]
