@@ -1,4 +1,4 @@
--- constellations; version 0.8.2
+-- constellations; version 0.8.3
 --
 -- scan the stars, make music
 -- an interactive sequencer
@@ -244,11 +244,12 @@ local function setup_params()
     options = options.OUTPUT,
     action = function(value)
       midi_util.all_notes_off()
-      if value == 2 then 
+      if value == 4 or value == 5 then 
         crow.output[2].action = "pulse()"
         crow.output[3].shape = "sine"
         crow.output[4].shape = "sine"
-      elseif value == 3 then
+      end
+      if value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
       end
