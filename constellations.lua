@@ -92,10 +92,9 @@ function main_event()
             end
             -- MIDI out
             if (params:get("output") == 2 or params:get("output") == 3) then
-              midi_util.device:note_on(note, 96, midi_util.channel)
+              midi_util.out_device:note_on(note, 96, midi_util.out_channel)
               table.insert(midi_util.active_notes, note)
             end
-            --local note_off_time = 
             -- Note off timeout
             if params:get("note_length") < 4 then
               notes_off_metro:start(
@@ -239,7 +238,7 @@ local function setup_params()
   params:add_separator("constellations")
 
   -- output params 
-  params:add_group("output",3)
+  params:add_group("output & midi",5)
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
     action = function(value)
@@ -248,6 +247,8 @@ local function setup_params()
         crow.output[2].action = "pulse()"
         crow.output[3].shape = "sine"
         crow.output[4].shape = "sine"
+        crow.input[2].mode("stream", 0.01)
+        crow.input[2].stream = crosshair.set_xy_crow
       end
       if value == 5 or value == 6 then
         crow.ii.pullup(true)
@@ -256,69 +257,113 @@ local function setup_params()
     end
   }
 
-  -- midi params  
-  params:add{type = "option", id = "midi_device", name = "midi out device",
-    options = midi_util.devices, default = 1,
-    action = function(value) midi_util.device = midi.connect(value) end
+  -- midi params
+  params:add{type = "option", id = "midi_out_device", 
+    name = "midi out device",
+    options = midi_util.out_devices, default = 1,
+    action = function(value) 
+      midi_util.out_device = midi.connect(value) 
+      midi_util.attach_out_event()
+    end
   }
-  params:add{type = "number", id = "midi_out_channel", name = "midi out channel",
+  params:add{type = "number", id = "midi_out_channel", 
+    name = "midi out channel",
     min = 1, max = 16, default = 1,
     action = function(value)
       midi_util.all_notes_off()
-      midi_util.channel = value
+      midi_util.out_channel = value
+    end
+  }
+  params:add{type = "option", id ="midi_in_devices", 
+    name= "midi in device",
+    options = midi_util.in_devices, default = 1,
+    action = function(value) 
+      midi_util.in_device = midi.connect(value) 
+      midi_util.attach_in_event()
+    end
+  }
+  params:add{type = "number", id = "midi_in_channel", 
+    name = "midi in channel",
+    min = 1, max = 16, default = 1,
+    action = function(value) 
+      midi_util.in_channel = value 
     end
   }
   
   -- sequencer params
   params:add_group("sequencer params",10)
   params:add{type = "number", id = "max_size", name = "max sequence size", 
-    min = 1, max = 2000, default = 128 }
-  params:add{type = "option", id = "overwrite_logic", name = "overwrite logic", options = { "low to high", "random", "none" }, default = 1 }
+    min = 1, max = 2000, default = 128
+  }
+  params:add{type = "option", id = "overwrite_logic", 
+    name = "overwrite logic", 
+    options = { "low to high", "random", "none" }, 
+    default = 1
+  }
   params:add{type = "number", id = "step_div", name = "step division", 
-    min = 1, max = 16, default = 4}
+    min = 1, max = 16, default = 4
+  }
   params:add{type = "option", id = "note_length", name = "note length",
     options = {"25%", "50%", "75%", "100%"},
-    default = 4}
+    default = 4
+  }
   params:add{type = "option", id = "scale_mode", name = "scale mode",
     options = seq.scale_names, default = 5,
-    action = function() seq.build_scale() end}
+    action = function() seq.build_scale() end
+  }
   params:add{type = "number", id = "root_note", name = "root note",
-    min = 0, max = 127, default = 60, formatter = function(param) return Mu.note_num_to_name(param:get(), true) end,
-    action = function() seq.build_scale() end}
+    min = 0, max = 127, default = 60, 
+    formatter = function(param) 
+      return Mu.note_num_to_name(param:get(), true) 
+    end,
+    action = function() seq.build_scale() end
+  }
   params:add{type = "number", id = "probability", name = "probability",
-    min = 0, max = 100, default = 100}
+    min = 0, max = 100, default = 100
+  }
   params:add{type = "trigger", id = "stop", name = "stop",
-    action = function() stop() reset() end}
+    action = function() stop() reset() end
+  }
   params:add{type = "trigger", id = "start", name = "start",
-    action = function() start() end}
+    action = function() start() end
+  }
   params:add{type = "trigger", id = "reset", name = "reset",
-    action = function() reset() end}
+    action = function() reset() end
+  }
  
   -- engine params
   params:add_group("engine params",6)
   cs_AMP = controlspec.new(0,1,'lin',0,0.5,'')
-  params:add{type="control",id="amp",name="max amplitude",controlspec=cs_AMP,
-    action=function(x) engine.amp(x) end}
+  params:add{type="control",id="amp",
+    name="max amplitude",controlspec=cs_AMP,
+    action=function(x) engine.amp(x) end
+  }
   
   cs_REL = controlspec.new(0.1,3.2,'lin',0,1.2,'s')
-  params:add{type="control",id="release", name="max release",controlspec=cs_REL,
-    action=function(x) engine.release(x) end}
+  params:add{type="control",id="release", 
+    name="max release",controlspec=cs_REL,
+    action=function(x) engine.release(x) end
+  }
   
   cs_PW = controlspec.new(0,100,'lin',0,50,'%')
   params:add{type="control",id="pulsewidth",controlspec=cs_PW,
-    action=function(x) engine.pw(x/100) end}
+    action=function(x) engine.pw(x/100) end
+  }
   
   cs_CUT = controlspec.new(50,5000,'exp',0,800,'hz')
   params:add{type="control",id="cutoff",controlspec=cs_CUT,
-    action=function(x) engine.cutoff(x) end}
+    action=function(x) engine.cutoff(x) end
+  }
   
   cs_GAIN = controlspec.new(0,4,'lin',0,1,'')
   params:add{type="control",id="gain",controlspec=cs_GAIN,
-    action=function(x) engine.gain(x) end}
+    action=function(x) engine.gain(x) end
+  }
   
   cs_PAN = controlspec.new(-1,1, 'lin',0,0,'')
   params:add{type="control",id="pan",controlspec=cs_PAN,
-    action=function(x) engine.pan(x) end}
+    action=function(x) engine.pan(x) end
+  }
  
   -- star params
   params:add{type = "number", id = "density", name = "star density",
@@ -334,11 +379,28 @@ function init()
   norns.enc.sens(2,2)
   norns.enc.sens(3,2)
   
-  midi_util.build_midi_device_list()
+  midi_util.build_midi_out_device_list()
+  midi_util.build_midi_in_device_list()
   setup_params()
   seq.build_scale()
-  midi_util.device = midi.connect(value)
-  midi_util.attach_event()
+  midi_util.out_device = midi.connect(value) 
+  midi_util.attach_out_event()
+
+  function midi_util.in_event(data)
+    msg = midi.to_msg(data)
+    if msg.type == "cc" then
+      if msg.cc == 0 then
+        crosshair.set_y_midi(msg.val)
+      elseif msg.cc == 1 then
+        params:set("density",msg.val)
+      elseif msg.cc == 2 then
+        params:set("size",msg.val)
+      end
+    end
+  end
+  midi_util.in_device = midi.connect(value) 
+  midi_util.attach_in_event()
+
   main_clock = clock.run(main_event)
 end
 

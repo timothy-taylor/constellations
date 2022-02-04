@@ -87,6 +87,10 @@ function seq.get_size()
   return #seq.notes 
 end
 
+function seq.is_full()
+  return #seq.notes >= params:get("max_size")
+end
+
 function seq.clear_all() 
   seq.notes = {} 
   seq.release = {} 

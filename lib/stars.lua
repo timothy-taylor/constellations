@@ -30,7 +30,9 @@ stars.tag = function(star,i,seq,crosshair)
       star.TAGGED = true
       star.id = id
       
-      if params:get("overwrite_logic") ~= 3 then
+      if params:get("overwrite_logic") == 3 and seq.is_full() then
+        seq.toggle_lock()
+      else
         seq.set_overwrite_ix(y)
         seq.add_note(star.note,id)
         seq.add_release(star.size,id)
