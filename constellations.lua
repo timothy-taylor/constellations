@@ -83,18 +83,16 @@ function main_event()
               engine.amp(seq.get_amp())
               engine.hz(Mu.note_num_to_freq(note))
             end
-            if crow.connected() then
-              -- crow out
-              if params:get("output") == 4 or params:get("output") == 5 then
-                crow.output[1].volts = (note-60)/12
-                crow.output[2].execute()
-                crow.output[3].volts = seq.get_amp_crow()
-                crow.output[4].volts = seq.get_release_crow()
-              end
-              -- JF out
-              if params:get("output") == 5 or params:get("output") == 6 then
-                crow.ii.jf.play_note((note-60)/12,5)
-              end
+            -- crow out
+            if params:get("output") == 4 or params:get("output") == 5 then
+              crow.output[1].volts = (note-60)/12
+              crow.output[2].execute()
+              crow.output[3].volts = seq.get_amp_crow()
+              crow.output[4].volts = seq.get_release_crow()
+            end
+            -- JF out
+            if params:get("output") == 5 or params:get("output") == 6 then
+              crow.ii.jf.play_note((note-60)/12,5)
             end
             -- MIDI out
             if (params:get("output") == 2 or params:get("output") == 3) then
