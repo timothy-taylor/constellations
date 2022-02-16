@@ -96,7 +96,7 @@ function main_event()
             end
             -- MIDI out
             if (params:get("output") == 2 or params:get("output") == 3) then
-              midi_util.out_device:note_on(note, 96, midi_util.out_channel)
+              midi_util.device:note_on(note, 96, midi_util.channel)
               table.insert(midi_util.active_notes, note)
             end
             -- Note off timeout
@@ -154,12 +154,14 @@ function redraw()
   end
   -- draw the crosshair
   screen.level(1)
-  for n=1,crosshair.size do
-    screen.pixel(crosshair.x, crosshair.y)
-    screen.pixel(crosshair.x + n, crosshair.y)
-    screen.pixel(crosshair.x - n, crosshair.y)
-    if not seq.LOCKED then screen.pixel(crosshair.x, crosshair.y + n) end
-    if not seq.LOCKED then screen.pixel(crosshair.x, crosshair.y - n) end
+  for n=1,params:get("crosshair_size") do
+    local x = params:get("x_axis")
+    local y = params:get("y_axis")
+    screen.pixel(x, y)
+    screen.pixel(x + n, y)
+    screen.pixel(x - n, y)
+    if params:get("targeting") == 2 then screen.pixel(x, y + n) end
+    if params:get("targeting") == 2 then screen.pixel(x, y - n) end
   end
   screen.fill()
   -- write the size of sequence
@@ -230,11 +232,11 @@ function enc(n,d)
   elseif n == 2 and ALT then
     params:delta("density",d)
   elseif n == 2 then
-    crosshair.y = Util.clamp(crosshair.y + d, 0, 64 - 1)
+    params:delta("y_axis",d)
   elseif n == 3 and ALT then
     params:delta("size",d)
   elseif n == 3 then
-    crosshair.x = Util.clamp(crosshair.x + d, 0, 128 - 1)
+    params:delta("x_axis", d)
   end
 end
 
@@ -242,7 +244,7 @@ local function setup_params()
   params:add_separator("constellations")
 
   -- output params 
-  params:add_group("output & midi",5)
+  params:add_group("input & output",4)
   params:add{type = "option", id = "output", name = "output",
     options = options.OUTPUT,
     action = function(value)
@@ -251,9 +253,7 @@ local function setup_params()
         crow.output[2].action = "pulse()"
         crow.output[3].shape = "sine"
         crow.output[4].shape = "sine"
-        crow.input[2].mode("stream", 0.01)
-        crow.input[2].stream = crosshair.set_xy_crow
-      end
+        end
       if value == 5 or value == 6 then
         crow.ii.pullup(true)
         crow.ii.jf.mode(1)
@@ -261,36 +261,32 @@ local function setup_params()
     end
   }
 
-  -- midi params
-  params:add{type = "option", id = "midi_out_device", 
-    name = "midi out device",
-    options = midi_util.out_devices, default = 1,
-    action = function(value) 
-      midi_util.out_device = midi.connect(value) 
-      midi_util.attach_out_event()
+  params:add{type = "option", id = "crow_input", 
+    name = "crow input 2", 
+    options = { "off", "on" }, 
+    action = function(value)
+      if value == 2 then
+        crow.input[2].mode("stream", 0.01)
+        crow.input[2].stream = crosshair.set_xy_crow
+      end
     end
   }
-  params:add{type = "number", id = "midi_out_channel", 
+
+  -- midi params
+  params:add{type = "option", id = "midi_device", 
+    name = "midi out device",
+    options = midi_util.devices, default = 1,
+    action = function(value) 
+      midi_util.device = midi.connect(value) 
+      midi_util.attach_event()
+    end
+  }
+  params:add{type = "number", id = "midi_channel", 
     name = "midi out channel",
     min = 1, max = 16, default = 1,
     action = function(value)
       midi_util.all_notes_off()
-      midi_util.out_channel = value
-    end
-  }
-  params:add{type = "option", id ="midi_in_devices", 
-    name= "midi in device",
-    options = midi_util.in_devices, default = 1,
-    action = function(value) 
-      midi_util.in_device = midi.connect(value) 
-      midi_util.attach_in_event()
-    end
-  }
-  params:add{type = "number", id = "midi_in_channel", 
-    name = "midi in channel",
-    min = 1, max = 16, default = 1,
-    action = function(value) 
-      midi_util.in_channel = value 
+      midi_util.channel = value
     end
   }
   
@@ -370,11 +366,23 @@ local function setup_params()
   }
  
   -- star params
+  params:add_group("star params", 2)
   params:add{type = "number", id = "density", name = "star density",
     min = 1, max = 100, default = 25} 
   params:add{type = "number", id = "size", name = "star size",
     min = 1, max = 100, default = 1}
- end
+
+  -- crosshair params
+  params:add_group("crosshair params",4)
+  params:add{type = "option", id= "targeting", name = "targeting",
+    options = { "off", "on" }, default = 1 }
+  params:add{type = "number", id = "y_axis", name = "y axis targeting",
+    min = 0, max = 63, default = 32}
+  params:add{type = "number", id = "x_axis", name = "x axis targeting",
+    min = 0, max = 127, default = 64}
+  params:add{type = "number", id = "crosshair_size", name = "size",
+    min = 1, max = 25, default = 3}
+end
 
 function init()
   seq.build_scale_list()
@@ -383,27 +391,11 @@ function init()
   norns.enc.sens(2,2)
   norns.enc.sens(3,2)
   
-  midi_util.build_midi_out_device_list()
-  midi_util.build_midi_in_device_list()
+  midi_util.build_midi_device_list()
   setup_params()
   seq.build_scale()
-  midi_util.out_device = midi.connect(value) 
-  midi_util.attach_out_event()
-
-  function midi_util.in_event(data)
-    msg = midi.to_msg(data)
-    if msg.type == "cc" then
-      if msg.cc == 0 then
-        crosshair.set_y_midi(msg.val)
-      elseif msg.cc == 1 then
-        params:set("density",msg.val)
-      elseif msg.cc == 2 then
-        params:set("size",msg.val)
-      end
-    end
-  end
-  midi_util.in_device = midi.connect(value) 
-  midi_util.attach_in_event()
+  midi_util.device = midi.connect(value) 
+  midi_util.attach_event()
 
   main_clock = clock.run(main_event)
 end
@@ -426,7 +418,7 @@ animate.event = function()
     stars.add(star)
   end
   -- apply changes
-  stars.iterate(seq,crosshair)
+  stars.iterate(seq)
   -- and then draw them
   redraw()
 end

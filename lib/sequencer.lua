@@ -3,7 +3,6 @@ local Util = require 'util'
 
 seq = {}
 
-seq.LOCKED = true
 seq.CLEAR = false
 seq.scale_names = {}
 seq.scale = {}
@@ -33,7 +32,6 @@ end
 
 function seq.add_note(n,i)
   local ix = seq.get_overwrite_ix(i)
-  --print('i:'..i..' / ix:'..ix)
   seq.notes[ix] = n 
 end
 
@@ -60,7 +58,9 @@ function seq.set_overwrite_ix(y)
 end
 
 function seq.increment() seq.ix = seq.ix % #seq.notes + 1 end
-function seq.toggle_lock() seq.LOCKED = not seq.LOCKED end
+function seq.toggle_lock()
+  params:set("targeting", params:get("targeting") % 2 + 1) 
+end
 function seq.reset() seq.ix = 1 end
 
 function seq.get_note() 

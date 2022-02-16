@@ -3,24 +3,24 @@ local Util = require 'util'
 stars = {}
 stars.data = {}
 stars.get_number = function() return #stars.data end
-stars.iterate = function(seq,crosshair)
+stars.iterate = function(seq)
   local s = stars.data
   for i=1,#s do
     if s[i] then
       stars.update_coordinate(s[i])
-      stars.tag(s[i],i,seq,crosshair)
+      stars.tag(s[i],i,seq)
       stars.delete(s[i],i)
       stars.update_brightness(s[i]) 
     end
   end
 end
 
-stars.tag = function(star,i,seq,crosshair)
-  local x = crosshair.x
-  local y = crosshair.y
-  local size_cross = crosshair.size
+stars.tag = function(star,i,seq)
+  local x = params:get("x_axis")
+  local y = params:get("y_axis")
+  local size_cross = params:get("crosshair_size")
   local size_star = star.size
-  if not star.TAGGED and not seq.LOCKED then
+  if not star.TAGGED and params:get("targeting") == 2 then
     if (star.x - size_star - size_cross <= x) 
     and (x <= star.x + size_star + size_cross)
     and (star.y - size_star - size_cross <= y) 
