@@ -1,6 +1,6 @@
 ## constellations
 
-version 0.8.4
+version 0.9.1
 
 for norns
 
