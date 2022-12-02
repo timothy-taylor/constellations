@@ -13,23 +13,6 @@ function Actions.stop()
 	Midi_util.all_notes_off()
 end
 
-function Actions.generate_stars()
-	if math.random(100) <= params:get("density") then
-		local star = StarFactory:new()
-		local size = math.floor(math.log(math.random(params:get("size") * 15)))
-		local qt = math.floor(size / 4)
-		local y = math.random(qt, 64 - qt)
-		star.note = math.floor(Util.linlin(qt, 64 - qt, 0, 32, 64 - y))
-		star.brightness = math.floor(math.random(1, 15))
-		star.size = size
-		star.y = y
-		Stars.add(star)
-	end
-	-- apply changes
-	Stars.iterate(Seq)
-	-- and then draw them
-end
-
 function Actions.main_event()
 	while true do
 		if Seq.get_size() < 1 and Midi_util.PLAY then
@@ -86,7 +69,5 @@ function Actions.main_event()
 		end
 	end
 end
-
-
 
 return Actions

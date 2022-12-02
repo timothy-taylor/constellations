@@ -1,4 +1,4 @@
--- constellations; version 0.8.4
+-- constellations; version 0.9.0
 --
 -- scan the stars, make music
 -- an interactive Sequencer
@@ -83,7 +83,6 @@ function enc(n, d)
 		params:delta("x_axis", d)
 	end
 end
-
 
 function redraw()
 	local sn = screen
@@ -266,9 +265,7 @@ local function build_params()
 		name = "scale mode",
 		options = Seq.scale_names,
 		default = 5,
-		action = function()
-			Seq.build_scale()
-		end,
+		action = Seq.build_scale
 	})
 	params:add({
 		type = "number",
@@ -280,9 +277,7 @@ local function build_params()
 		formatter = function(param)
 			return Mu.note_num_to_name(param:get(), true)
 		end,
-		action = function()
-			Seq.build_scale()
-		end,
+		action = Seq.build_scale,
 	})
 	params:add({ type = "number", id = "probability", name = "probability", min = 0, max = 100, default = 100 })
 	params:add({
@@ -298,17 +293,13 @@ local function build_params()
 		type = "trigger",
 		id = "start",
 		name = "start",
-		action = function()
-			Actions.start()
-		end,
+		action = Actions.start,
 	})
 	params:add({
 		type = "trigger",
 		id = "reset",
 		name = "reset",
-		action = function()
-			Actions.reset()
-		end,
+		action = Actions.reset,
 	})
 
 	params:add_group("engine params", 6)
@@ -385,7 +376,6 @@ local function build_params()
 	params:add({ type = "number", id = "crosshair_size", name = "size", min = 1, max = 25, default = 3 })
 end
 
-local main_clock
 function init()
 	math.randomseed(Util.time())
 	norns.enc.sens(2, 2)
@@ -403,6 +393,7 @@ function init()
 	local animate = metro.init()
 	animate.time = 1 / 15
 	animate.event = function()
+		-- create star data
 		if math.random(100) <= params:get("density") then
 			local star = StarFactory:new()
 			local size = math.floor(math.log(math.random(params:get("size") * 15)))
@@ -423,10 +414,11 @@ function init()
 	Notes_off = metro.init()
 	Notes_off.event = Midi_util.all_notes_off
 
-	main_clock = clock.run(Actions.main_event)
+	-- and go
+	Main_clock = clock.run(Actions.main_event)
 end
 
 function cleanup()
 	Actions.stop()
-	clock.cancel(main_clock)
+	clock.cancel(Main_clock)
 end

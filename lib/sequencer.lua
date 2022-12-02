@@ -42,12 +42,14 @@ function Seq.pop()
 	table.remove(Seq.notes)
 	table.remove(Seq.release)
 	table.remove(Seq.amp)
+  table.remove(Seq.time)
 end
 
 function Seq.shift()
 	table.remove(Seq.notes, 1)
 	table.remove(Seq.release, 1)
 	table.remove(Seq.amp, 1)
+  table.remove(Seq.time, 1)
 end
 
 function Seq.set_overwrite_ix(y)
@@ -61,9 +63,11 @@ end
 function Seq.increment()
 	Seq.ix = Seq.ix % #Seq.notes + 1
 end
+
 function Seq.toggle_lock()
 	params:set("targeting", params:get("targeting") % 2 + 1)
 end
+
 function Seq.reset()
 	Seq.ix = 1
 end

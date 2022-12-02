@@ -9,4 +9,3 @@ Stars = include("lib/stars")
 Actions = include("lib/actions")
 Crosshair = include("lib/crosshair")
 StarFactory = include("lib/starfactory")
-

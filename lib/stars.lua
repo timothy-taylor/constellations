@@ -1,9 +1,11 @@
 Stars = {}
 
 Stars.data = {}
+
 Stars.get_number = function()
 	return #Stars.data
 end
+
 Stars.iterate = function(seq)
 	local s = Stars.data
 	for i = 1, #s do
