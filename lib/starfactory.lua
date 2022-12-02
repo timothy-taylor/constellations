@@ -1,9 +1,9 @@
-StarFactory = { 
-  note = 0, 
+StarFactory = {
+  note = 0,
   brightness = 1,
   size = 1,
-  x = -10, 
-  y = 1, 
+  x = -10,
+  y = 1,
   TAGGED = false,
   id = nil
 }
@@ -15,8 +15,7 @@ function StarFactory:new (
     size,
     x,
     y,
-    tracked,
-    playing,
+    TAGGED,
     id
 )
   o = o or {}
