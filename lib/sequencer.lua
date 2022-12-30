@@ -42,14 +42,14 @@ function Seq.pop()
 	table.remove(Seq.notes)
 	table.remove(Seq.release)
 	table.remove(Seq.amp)
-  table.remove(Seq.time)
+	table.remove(Seq.time)
 end
 
 function Seq.shift()
 	table.remove(Seq.notes, 1)
 	table.remove(Seq.release, 1)
 	table.remove(Seq.amp, 1)
-  table.remove(Seq.time, 1)
+	table.remove(Seq.time, 1)
 end
 
 function Seq.set_overwrite_ix(y)
@@ -78,7 +78,7 @@ end
 
 function Seq.get_time()
 	if Seq.get_size() < 1 then
-		return 1/15
+		return 1 / 15
 	end
 
 	local ix = Seq.ix
@@ -115,7 +115,7 @@ function Seq.clear_all()
 	Seq.notes = {}
 	Seq.release = {}
 	Seq.amp = {}
-  Seq.time = {}
+	Seq.time = {}
 	Seq.ix = 1
 	Seq.CLEAR = true
 end

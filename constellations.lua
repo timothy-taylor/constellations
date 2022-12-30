@@ -86,16 +86,15 @@ end
 
 function redraw()
 	screen.clear()
-  Gui.stars()
-  Gui.crosshair()
-  Gui.seq_size()
-  Gui.clock()
+	Gui.stars()
+	Gui.crosshair()
+	Gui.seq_size()
+	Gui.clock()
 	if ALT then
-    Gui.alt()
+		Gui.alt()
 	end
 	screen.update()
 end
-
 
 function key(n, z)
 	if z == 1 then

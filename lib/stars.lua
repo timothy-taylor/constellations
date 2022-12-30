@@ -42,7 +42,7 @@ Stars.tag = function(star, _, seq)
 				seq.add_note(star.note, id)
 				seq.add_release(star.size, id)
 				seq.add_amp(star.brightness, id)
-        seq.add_time(Util.time(), id)
+				seq.add_time(Util.time(), id)
 			end
 
 			if not seq.PLAY then
@@ -51,9 +51,7 @@ Stars.tag = function(star, _, seq)
 			if seq.CLEAR then
 				seq.CLEAR = false
 			end
-
 		else
-
 			if seq.CLEAR then
 				star.TAGGED = false
 			end
