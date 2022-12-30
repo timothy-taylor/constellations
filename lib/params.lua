@@ -90,12 +90,11 @@ function Params.sequencer()
 		min = 1,
 		max = 1500,
 		default = 128,
-		action = function(x)
-			local value = x - 1
+		action = function(value)
 			local min_lookup = params.lookup["min_size"]
 			params.params[min_lookup].max = value
 
-			if params:get("min_size") >= x then
+			if params:get("min_size") > x then
 				params:set("min_size", value)
 			end
 		end,
