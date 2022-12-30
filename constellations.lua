@@ -121,11 +121,11 @@ function enc(n, d)
 	elseif n == 1 then
 		params:delta("step_div", d)
 	elseif n == 2 and ALT then
-		params:delta("density", d)
+		params:delta("star_density", d)
 	elseif n == 2 then
 		params:delta("y_axis", d)
 	elseif n == 3 and ALT then
-		params:delta("size", d)
+		params:delta("star_size", d)
 	elseif n == 3 then
 		params:delta("x_axis", d)
 	end
