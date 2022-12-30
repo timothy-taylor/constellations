@@ -1,4 +1,4 @@
--- constellations; version 0.9.1
+-- constellations; version 0.9.2
 --
 -- scan the stars, make music
 -- an interactive Sequencer
