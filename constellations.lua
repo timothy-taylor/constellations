@@ -32,7 +32,7 @@
 --
 -- crow
 -- [  input2: 0-5v => Y axis ]
--- [ output1: 1 volt per octave ]
+-- [ output1: 1 v/o ]
 -- [ output2: clock pulse ]
 -- [ output3: unipolar CV ]
 -- [ output4: bipolar CV ]
@@ -60,9 +60,9 @@ function init()
 	animate.time = 1 / 15
 	animate.event = function()
 		-- create star data
-		if math.random(100) <= params:get("density") then
+		if math.random(100) <= params:get("star_density") then
 			local star = StarFactory:new()
-			local size = math.floor(math.log(math.random(params:get("size") * 15)))
+			local size = math.floor(math.log(math.random(params:get("star_size") * 15)))
 			local qt = math.floor(size / 4)
 			local y = math.random(qt, 64 - qt)
 			star.note = math.floor(Util.linlin(qt, 64 - qt, 0, 32, 64 - y))

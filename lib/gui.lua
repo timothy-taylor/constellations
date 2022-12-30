@@ -62,7 +62,7 @@ end
 function Gui.clock()
 	sn.level(7)
 	sn.move(124, 5)
-	sn.text_right("" .. params:get("step_div"))
+	sn.text_right("x" .. params:get("step_div"))
 	sn.fill()
 end
 
