@@ -94,7 +94,7 @@ function Params.sequencer()
 			local min_lookup = params.lookup["min_size"]
 			params.params[min_lookup].max = value
 
-			if params:get("min_size") > x then
+			if params:get("min_size") > value then
 				params:set("min_size", value)
 			end
 		end,
