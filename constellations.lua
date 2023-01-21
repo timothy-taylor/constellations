@@ -50,6 +50,7 @@ function init()
 	Midi_util.build_midi_device_list()
 	Seq.build_scale_list()
 	Params.build()
+  LFOs.build()
 	Seq.build_scale()
 
 	Midi_util.device = midi.connect()
@@ -82,6 +83,7 @@ function init()
 
 	-- and go
 	Main_clock = clock.run(Actions.main_event)
+  LFOs.start()
 end
 
 function redraw()

@@ -1,7 +1,8 @@
 Params = {}
 
 function Params.crosshair()
-	params:add_group("crosshair", 4)
+	params:add_group("crosshair", 5)
+	params:add({ type = "option", id = "autopilot", name = "autopilot", options = { "off", "on" }, default = 1 })
 	params:add({ type = "option", id = "targeting", name = "targeting", options = { "off", "on" }, default = 1 })
 	params:add({ type = "number", id = "y_axis", name = "y axis targeting", min = 0, max = 63, default = 32 })
 	params:add({ type = "number", id = "x_axis", name = "x axis targeting", min = 0, max = 127, default = 64 })
