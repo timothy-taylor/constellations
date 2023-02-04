@@ -22,7 +22,15 @@ function LFOs.build()
 	table.insert(LFOs.data, targeting)
 end
 
+function LFOs.isEmpty()
+	return #LFOs.data == 0
+end
+
 function LFOs.set(name, param, val)
+	if LFOs.isEmpty() then
+		return
+	end
+
 	for _, v in ipairs(LFOs.data) do
 		if name == nil then
 			v.lfo:set(param, val)
@@ -35,6 +43,10 @@ function LFOs.set(name, param, val)
 end
 
 function LFOs.start(name)
+	if LFOs.isEmpty() then
+		return
+	end
+
 	for _, v in ipairs(LFOs.data) do
 		if name == nil then
 			v.lfo:start()
@@ -47,6 +59,10 @@ function LFOs.start(name)
 end
 
 function LFOs.stop(name)
+	if LFOs.isEmpty() then
+		return
+	end
+
 	for _, v in ipairs(LFOs.data) do
 		if name == nil then
 			v.lfo:stop()
