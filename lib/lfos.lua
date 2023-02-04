@@ -3,25 +3,35 @@ LFOs = {}
 LFOs.data = {}
 
 function LFOs.build()
-	local targeting_lfo = _Lfo:add({
-    min = 0,
-    max = 63,
-		shape = "sine",
-    period = 8,
-		mode = "free",
-		action = function(scaled, raw)
-			if params:get("autopilot") == 2 then
-				params:set("y_axis", scaled)
-			end
-		end,
-	})
-
-	local data = {
+	local targeting = {
 		name = "targeting",
-		lfo = targeting_lfo,
+		lfo = _Lfo:add({
+			min = 0,
+			max = 63,
+			shape = "sine",
+			period = 8,
+			mode = "free",
+			action = function(scaled)
+				if params:get("autopilot") == 2 then
+					params:set("y_axis", scaled)
+				end
+			end,
+		}),
 	}
 
-	table.insert(LFOs.data, data)
+	table.insert(LFOs.data, targeting)
+end
+
+function LFOs.set(name, param, val)
+	for _, v in ipairs(LFOs.data) do
+		if name == nil then
+			v.lfo:set(param, val)
+		end
+
+		if v.name == name then
+			v.lfo:set(param, val)
+		end
+	end
 end
 
 function LFOs.start(name)
