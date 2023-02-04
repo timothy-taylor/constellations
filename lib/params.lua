@@ -10,7 +10,9 @@ function Params.crosshair()
 		option = { "sine", "saw", "square", "random" },
 		default = 1,
 		action = function(x)
-			LFOs.set("targeting", "shape", x)
+			if LFOs then
+				LFOs.set("targeting", "shape", x)
+			end
 		end,
 	})
 	params:add({ type = "option", id = "targeting", name = "targeting", options = { "off", "on" }, default = 1 })

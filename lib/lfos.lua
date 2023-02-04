@@ -22,12 +22,12 @@ function LFOs.build()
 	table.insert(LFOs.data, targeting)
 end
 
-function LFOs.isEmpty()
+function LFOs.is_empty()
 	return #LFOs.data == 0
 end
 
 function LFOs.set(name, param, val)
-	if LFOs.isEmpty() then
+	if LFOs.is_empty() then
 		return
 	end
 
@@ -43,7 +43,7 @@ function LFOs.set(name, param, val)
 end
 
 function LFOs.start(name)
-	if LFOs.isEmpty() then
+	if LFOs.is_empty() then
 		return
 	end
 
@@ -59,7 +59,7 @@ function LFOs.start(name)
 end
 
 function LFOs.stop(name)
-	if LFOs.isEmpty() then
+	if LFOs.is_empty() then
 		return
 	end
 
