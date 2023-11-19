@@ -59,8 +59,7 @@ function init()
 	-- initialize metros
 	local animate = metro.init()
 	animate.time = 1 / 60
-	animate.event = function(e)
-        print(e);
+	animate.event = function()
 		-- create star data
 		if math.random(100) <= params:get("star_density") then
 			local star = StarFactory:new()
