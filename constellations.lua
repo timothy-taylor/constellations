@@ -50,7 +50,7 @@ function init()
 	Midi_util.build_midi_device_list()
 	Seq.build_scale_list()
 	Params.build()
-  LFOs.build()
+	LFOs.build()
 	Seq.build_scale()
 
 	Midi_util.device = midi.connect()
@@ -58,7 +58,7 @@ function init()
 
 	-- initialize metros
 	local animate = metro.init()
-	animate.time = 1 / 15
+	animate.time = 1 / 30
 	animate.event = function()
 		-- create star data
 		if math.random(100) <= params:get("star_density") then
@@ -83,7 +83,7 @@ function init()
 
 	-- and go
 	Main_clock = clock.run(Actions.main_event)
-  LFOs.start()
+	LFOs.start()
 end
 
 function redraw()
