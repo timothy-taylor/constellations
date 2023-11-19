@@ -71,7 +71,7 @@ Stars.delete = function(star, i)
 end
 
 Stars.update_coordinate = function(star)
-	star.x = star.x + 1
+	star.x = star.x + 0.25
 end
 
 do
