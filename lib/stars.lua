@@ -78,10 +78,13 @@ do
 	local i = 0
 	Stars.update_brightness = function(star)
 		i = i + 1
+		local flip = i % 2
 		if i % 8 == 0 then
 			i = 0
 			local walk = math.random() >= 0.5 and 2 or -2
-			star.brightness = Util.clamp(star.brightness + walk, 1, 15)
+			if flip == 0 then
+				star.brightness = Util.clamp(star.brightness + walk, 1, 15)
+			end
 		end
 	end
 end
