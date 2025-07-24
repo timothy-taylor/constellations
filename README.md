@@ -1,6 +1,6 @@
 ## constellations
 
-version 0.9.2
+version 1.0.0
 
 for monome norns
 
