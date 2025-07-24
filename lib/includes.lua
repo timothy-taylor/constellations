@@ -6,20 +6,20 @@ Lfo = require("lib/lfo")
 Lattice = require("lattice")
 
 DIVISION_NAMES = {
-    "1",     -- whole note
-    "1/2.",  -- dotted half
-    "1/2",   -- half note
-    "1/2t",  -- half triplet
-    "1/4.",  -- dotted quarter
-    "1/4",   -- quarter note
-    "1/4t",  -- quarter triplet
-    "1/8.",  -- dotted eighth
-    "1/8",   -- eighth note
-    "1/8t",  -- eighth triplet
-    "1/16.", -- dotted sixteenth
-    "1/16",  -- sixteenth note
-    "1/16t", -- sixteenth triplet
-    "1/32",  -- thirty-second note
+    "1",
+    "1/2.",
+    "1/2",
+    "1/2t",
+    "1/4.",
+    "1/4",
+    "1/4t",
+    "1/8.",
+    "1/8",
+    "1/8t",
+    "1/16.",
+    "1/16",
+    "1/16t",
+    "1/32",
 }
 
 DIVISION_VALUES = {
