@@ -1,0 +1,23 @@
+{
+  "diagnostics.globals": [
+    "params",
+    "controlspec",
+    "clock",
+    "metro",
+    "screen",
+    "midi",
+    "audio",
+    "engine",
+    "musicutil",
+    "util",
+    "key",
+    "enc",
+    "redraw",
+    "init",
+    "cleanup",
+    "norns",
+    "include",
+    "lib",
+    "crow"
+  ]
+}
